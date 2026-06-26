@@ -66,6 +66,17 @@ background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-
 .act-row select{cursor:pointer}
 .st-미정{color:var(--faint)}.st-협의중{color:var(--amber)}.st-확정{color:var(--nav)}.st-완료{color:var(--green)}
 @media(max-width:1080px){#actGrid{grid-template-columns:1fr}}
+.act details.ai{margin:0 0 10px}
+.act details.ai summary{cursor:pointer;font-size:11.5px;font-weight:700;color:var(--nav);list-style:none;display:inline-flex;align-items:center;gap:6px;padding:3px 0}
+.act details.ai summary::-webkit-details-marker{display:none}
+.act details.ai summary .arw{transition:.15s;display:inline-block;font-size:9px}
+.act details.ai[open] summary .arw{transform:rotate(90deg)}
+.ai-list{margin-top:5px;border-top:1px solid var(--line2)}
+.ai-row{display:grid;grid-template-columns:13px 1fr auto auto;gap:9px;align-items:center;padding:5px 2px;border-bottom:1px solid var(--line2);font-size:12px}
+.ai-nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ai-nm .sub{font-size:10px;color:var(--faint);font-family:var(--mono);font-weight:600}
+.ai-meta{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.ai-amt{font-family:var(--mono);font-weight:700;font-size:12px;text-align:right;white-space:nowrap;color:var(--ink)}
 .trend-read{font-size:13.5px;line-height:1.7;color:var(--muted)}
 .trend-read .hl{display:block;font-size:15px;color:var(--ink);font-weight:700;margin-bottom:6px}
 .trend-read ul{margin:12px 0 0;padding-left:18px}.trend-read li{margin-bottom:8px}.trend-read b{color:var(--ink)}
@@ -402,6 +413,16 @@ function persist(){
 }
 const actClusters=[...DATA.clusters].sort((a,b)=>(b.red_amt-a.red_amt)||(b.amt-a.amt));
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function compactItems(name){
+  const items=DATA.skus.filter(s=>s.clu===name).sort((a,b)=>b.amt-a.amt);
+  const rows=items.map(s=>{
+    const m=s.mtd==null?'<span style="color:var(--red);font-weight:700">정체</span>':`소진 ${s.mtd}M`;
+    return `<div class="ai-row"><span class="tt-dot" style="background:${TCOL[s.tier]}"></span>`+
+      `<span class="ai-nm">${s.name} <span class="sub">${s.code}</span></span>`+
+      `<span class="ai-meta">잔량 ${s.qty} · ${m}</span><span class="ai-amt">₩${s.amt.toFixed(2)}</span></div>`;
+  }).join('');
+  return `<details class="ai"><summary><span class="arw">▶</span>품목 ${items.length}종 보기</summary><div class="ai-list">${rows}</div></details>`;
+}
 function renderActions(){
   const g=document.getElementById('actGrid');
   g.innerHTML=actClusters.map(c=>{
@@ -411,6 +432,7 @@ function renderActions(){
     return `<div class="act ${c.red?'lead':''}" data-c="${esc(c.name)}">
       <div class="act-h"><span class="act-n">${c.name}</span><span class="ctx">₩${c.amt}M · ${c.n}종</span></div>
       <div class="act-ctx">${redchip}<span>용도 ${c.use}</span><span>단종 ${c.disc}</span></div>
+      ${compactItems(c.name)}
       <textarea data-f="plan" placeholder="소진 방안 — 예: 특별할인+B2B/단체 소진처 발굴 · AS용은 소요량 재산정 후 초과분 폐기 검토">${esc(v.plan)}</textarea>
       <div class="act-row">
         <label>목표시점<input data-f="due" value="${esc(v.due)}" placeholder="예: 2026-09"></label>
