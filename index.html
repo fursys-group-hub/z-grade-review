@@ -42,6 +42,30 @@ background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-
 .sfilter:focus{outline:2px solid var(--nav);outline-offset:1px}
 .estnote{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5;padding-left:2px}
 .estnote b{color:var(--muted);font-weight:700}
+.editbadge{font-size:10.5px;font-weight:800;color:#fff;background:var(--green);padding:2px 8px;border-radius:20px;letter-spacing:.02em}
+.act-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.savestate{font-size:11.5px;color:var(--faint);font-weight:600;margin-right:2px}
+.savestate.ok{color:var(--green)}
+.abtn{font-size:12.5px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--nav);padding:7px 12px;border-radius:9px;cursor:pointer;transition:.12s}
+.abtn:hover{border-color:var(--nav);background:#F6F7F9}
+.abtn.ghost{color:var(--muted)}
+.abtn.copied{background:var(--green);color:#fff;border-color:var(--green)}
+#actGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.act{border:1px solid var(--line);border-radius:12px;padding:15px 16px;background:#FCFCFD}
+.act.lead{border-left:4px solid var(--red)}
+.act-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.act-n{font-size:14.5px;font-weight:800}
+.act-h .ctx{font-size:11px;color:var(--faint);font-weight:600;white-space:nowrap}
+.act-ctx{font-size:11.5px;color:var(--muted);margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.act textarea{width:100%;min-height:62px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13px;color:var(--ink);resize:vertical;background:#fff;line-height:1.5}
+.act textarea:focus,.act input:focus,.act select:focus{outline:2px solid var(--nav);outline-offset:0;border-color:var(--nav)}
+.act textarea::placeholder,.act input::placeholder{color:#B7BDC8}
+.act-row{display:grid;grid-template-columns:1.1fr 1fr 0.9fr;gap:9px;margin-top:9px}
+.act-row label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:var(--muted)}
+.act-row input,.act-row select{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-family:inherit;font-size:12.5px;color:var(--ink);background:#fff}
+.act-row select{cursor:pointer}
+.st-미정{color:var(--faint)}.st-협의중{color:var(--amber)}.st-확정{color:var(--nav)}.st-완료{color:var(--green)}
+@media(max-width:1080px){#actGrid{grid-template-columns:1fr}}
 .trend-read{font-size:13.5px;line-height:1.7;color:var(--muted)}
 .trend-read .hl{display:block;font-size:15px;color:var(--ink);font-weight:700;margin-bottom:6px}
 .trend-read ul{margin:12px 0 0;padding-left:18px}.trend-read li{margin-bottom:8px}.trend-read b{color:var(--ink)}
@@ -140,7 +164,15 @@ tr.row-red td:first-child{box-shadow:inset 3px 0 0 var(--red)}tr.row-amber td:fi
 <div id="scatter"></div></div><div class="sec">
 <h2><span class="idx">03</span>악성 클러스터 — 시리즈/품목 덩어리</h2>
 <p class="desc">정체 금액은 소수 덩어리에 집중. <b>카드를 클릭하면 해당 덩어리의 품목별 우선순위</b>가 열린다. 색 막대 = 정체/장기/정상 구성비.</p>
-<div class="clu-grid" id="cluGrid"></div></div><div class="sec"><details class="tbl"><summary><span class="arw">▶</span>전체 SKU 명세 (30종) — 펼치기</summary>
+<div class="clu-grid" id="cluGrid"></div></div><div class="sec">
+<div class="chart-head"><h2><span class="idx">04</span>클러스터별 소진 대책 <span class="editbadge">입력</span></h2>
+<div class="act-tools">
+<span class="savestate" id="saveState"></span>
+<button class="abtn" id="copyAct">📋 대책 복사</button>
+<button class="abtn" id="csvAct">⬇ CSV</button>
+<button class="abtn ghost" id="resetAct">초기화</button></div></div>
+<p class="desc">회의에서 영업과 합의한 <b>소진방안·목표시점·담당</b>을 클러스터별로 기입. <b>이 브라우저(회의 PC)에 자동 저장</b>되며, 기록은 <b>[대책 복사]</b>로 Confluence·Slack에, <b>[CSV]</b>로 엑셀에 옮길 수 있다. 정체 금액이 큰 덩어리부터 정렬됨.</p>
+<div id="actGrid"></div></div><div class="sec"><details class="tbl"><summary><span class="arw">▶</span>전체 SKU 명세 (30종) — 펼치기</summary>
 <div style="overflow-x:auto"><table><thead><tr><th>등급</th><th>품목군</th><th>시리즈</th><th>단품명</th><th>CODE</th><th>용도</th><th>단종</th>
 <th style="text-align:right">잔량</th><th style="text-align:right">금액(M)</th><th style="text-align:right">회전율</th><th style="text-align:right">최근3M</th><th style="text-align:right">소진예상(M)</th></tr></thead>
 <tbody id="tbody"></tbody></table></div></details></div><div class="foot">
@@ -354,4 +386,88 @@ document.addEventListener('mousemove',e=>{const t=e.target;if(!t.classList)retur
   else if(t.classList.contains('rd'))showTip(e,`<b>${t.dataset.m}</b><br>출고 <span class="num">${t.dataset.v}</span>개`);
   else if(tip.style.opacity==='1')moveTip(e);});
 document.addEventListener('mouseout',e=>{if(e.target.classList&&['sd','cd','rd'].some(c=>e.target.classList.contains(c)))hideTip();});
+
+/* ---- CLUSTER ACTION PLANS (입력/저장/내보내기) ---- */
+const ACT_KEY='zgrade_actions_v1';
+const STATUSES=['미정','협의중','확정','완료'];
+function storageOK(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true;}catch(e){return false;}}
+const HAS_STORE=storageOK();
+function loadActs(){if(!HAS_STORE)return {};try{return JSON.parse(localStorage.getItem(ACT_KEY)||'{}');}catch(e){return {};}}
+let ACTS=loadActs();
+function persist(){
+  const ss=document.getElementById('saveState');
+  if(!HAS_STORE){ss.className='savestate';ss.textContent='⚠ 이 환경은 자동저장 불가 — [대책 복사]로 보관하세요';return;}
+  try{localStorage.setItem(ACT_KEY,JSON.stringify(ACTS));
+    const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    ss.className='savestate ok';ss.textContent='저장됨 ✓ '+t;}catch(e){ss.className='savestate';ss.textContent='저장 실패';}
+}
+const actClusters=[...DATA.clusters].sort((a,b)=>(b.red_amt-a.red_amt)||(b.amt-a.amt));
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function renderActions(){
+  const g=document.getElementById('actGrid');
+  g.innerHTML=actClusters.map(c=>{
+    const v=ACTS[c.name]||{};
+    const redchip=c.red?`<span class="mchip r">정체 ${c.red}종 ₩${c.red_amt}M</span>`:`<span class="mchip g">정체 없음</span>`;
+    const opts=STATUSES.map(s=>`<option ${ (v.status||'미정')===s?'selected':''}>${s}</option>`).join('');
+    return `<div class="act ${c.red?'lead':''}" data-c="${esc(c.name)}">
+      <div class="act-h"><span class="act-n">${c.name}</span><span class="ctx">₩${c.amt}M · ${c.n}종</span></div>
+      <div class="act-ctx">${redchip}<span>용도 ${c.use}</span><span>단종 ${c.disc}</span></div>
+      <textarea data-f="plan" placeholder="소진 방안 — 예: 특별할인+B2B/단체 소진처 발굴 · AS용은 소요량 재산정 후 초과분 폐기 검토">${esc(v.plan)}</textarea>
+      <div class="act-row">
+        <label>목표시점<input data-f="due" value="${esc(v.due)}" placeholder="예: 2026-09"></label>
+        <label>담당<input data-f="owner" value="${esc(v.owner)}" placeholder="예: 영업1팀 ○○○"></label>
+        <label>상태<select data-f="status" class="st-${v.status||'미정'}">${opts}</select></label>
+      </div></div>`;
+  }).join('');
+  // listeners
+  g.querySelectorAll('.act').forEach(card=>{
+    const name=card.dataset.c;
+    card.querySelectorAll('[data-f]').forEach(el=>{
+      const ev=el.tagName==='SELECT'?'change':'input';
+      el.addEventListener(ev,()=>{
+        ACTS[name]=ACTS[name]||{};
+        ACTS[name][el.dataset.f]=el.value;
+        if(el.tagName==='SELECT')el.className='st-'+el.value;
+        clearTimeout(el._t);el._t=setTimeout(persist,250);
+      });
+    });
+  });
+  if(HAS_STORE){const ss=document.getElementById('saveState');ss.className='savestate';ss.textContent=Object.keys(ACTS).length?'자동저장 켜짐 ✓':'입력 시 자동저장';}
+  else persist();
+}
+function actText(){
+  let out='# 누적재고 소진 대책 (기준 2026.06)\n\n';
+  actClusters.forEach(c=>{
+    const v=ACTS[c.name]||{};
+    out+=`## ${c.name} — 정체 ${c.red}종 ₩${c.red_amt}M / 용도 ${c.use} / 단종 ${c.disc}\n`;
+    out+=`- 소진방안: ${v.plan?v.plan.replace(/\n/g,' '):'(미입력)'}\n`;
+    out+=`- 목표시점: ${v.due||'-'}  |  담당: ${v.owner||'-'}  |  상태: ${v.status||'미정'}\n\n`;
+  });
+  return out.trim();
+}
+function actCSV(){
+  const q=s=>'"'+String(s||'').replace(/"/g,'""')+'"';
+  const head=['클러스터','정체종수','정체금액(M)','용도','단종','소진방안','목표시점','담당','상태'];
+  const rows=actClusters.map(c=>{const v=ACTS[c.name]||{};
+    return [c.name,c.red,c.red_amt,c.use,c.disc,v.plan||'',v.due||'',v.owner||'',v.status||'미정'].map(q).join(',');});
+  return '\uFEFF'+head.map(q).join(',')+'\n'+rows.join('\n');
+}
+document.getElementById('copyAct').onclick=async function(){
+  const txt=actText();
+  try{await navigator.clipboard.writeText(txt);}
+  catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(_){}document.body.removeChild(ta);}
+  this.classList.add('copied');const o=this.textContent;this.textContent='✓ 복사됨';setTimeout(()=>{this.classList.remove('copied');this.textContent=o;},1400);
+};
+document.getElementById('csvAct').onclick=function(){
+  const blob=new Blob([actCSV()],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='누적재고_소진대책_2026-06.csv';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);document.body.removeChild(a);},100);
+};
+document.getElementById('resetAct').onclick=function(){
+  if(!confirm('입력한 모든 대책을 지웁니다. 계속할까요?'))return;
+  ACTS={};if(HAS_STORE){try{localStorage.removeItem(ACT_KEY);}catch(e){}}
+  renderActions();
+};
+renderActions();
 </script></body></html>
