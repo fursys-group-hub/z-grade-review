@@ -168,10 +168,9 @@ tr.row-red td:first-child{box-shadow:inset 3px 0 0 var(--red)}tr.row-amber td:fi
 <div class="chart-head"><h2><span class="idx">04</span>클러스터별 소진 대책 <span class="editbadge">입력</span></h2>
 <div class="act-tools">
 <span class="savestate" id="saveState"></span>
-<button class="abtn" id="copyAct">📋 대책 복사</button>
-<button class="abtn" id="csvAct">⬇ CSV</button>
+<button class="abtn" id="copyAct">📋 대책 표 복사</button>
 <button class="abtn ghost" id="resetAct">초기화</button></div></div>
-<p class="desc">회의에서 영업과 합의한 <b>소진방안·목표시점·담당</b>을 클러스터별로 기입. <b>이 브라우저(회의 PC)에 자동 저장</b>되며, 기록은 <b>[대책 복사]</b>로 Confluence·Slack에, <b>[CSV]</b>로 엑셀에 옮길 수 있다. 정체 금액이 큰 덩어리부터 정렬됨.</p>
+<p class="desc">회의에서 영업과 합의한 <b>소진방안·목표시점·담당</b>을 클러스터별로 기입. <b>이 브라우저(회의 PC)에 자동 저장</b>되며, 기록은 <b>[대책 표 복사]</b>로 표 형태로 복사돼 Confluence·Slack에 붙여넣을 수 있다. 정체 금액이 큰 덩어리부터 정렬됨.</p>
 <div id="actGrid"></div></div><div class="sec"><details class="tbl"><summary><span class="arw">▶</span>전체 SKU 명세 (30종) — 펼치기</summary>
 <div style="overflow-x:auto"><table><thead><tr><th>등급</th><th>품목군</th><th>시리즈</th><th>단품명</th><th>CODE</th><th>용도</th><th>단종</th>
 <th style="text-align:right">잔량</th><th style="text-align:right">금액(M)</th><th style="text-align:right">회전율</th><th style="text-align:right">최근3M</th><th style="text-align:right">소진예상(M)</th></tr></thead>
@@ -436,33 +435,22 @@ function renderActions(){
   else persist();
 }
 function actText(){
+  const cell=s=>String(s==null?'':s).replace(/\|/g,'\\|').replace(/\n+/g,' ').trim();
   let out='# 누적재고 소진 대책 (기준 2026.06)\n\n';
+  out+='| 클러스터 | 정체 | 용도 | 단종 | 소진방안 | 목표시점 | 담당 | 상태 |\n';
+  out+='|---|---|---|---|---|---|---|---|\n';
   actClusters.forEach(c=>{
     const v=ACTS[c.name]||{};
-    out+=`## ${c.name} — 정체 ${c.red}종 ₩${c.red_amt}M / 용도 ${c.use} / 단종 ${c.disc}\n`;
-    out+=`- 소진방안: ${v.plan?v.plan.replace(/\n/g,' '):'(미입력)'}\n`;
-    out+=`- 목표시점: ${v.due||'-'}  |  담당: ${v.owner||'-'}  |  상태: ${v.status||'미정'}\n\n`;
+    const red=c.red?`${c.red}종 ₩${c.red_amt}M`:'-';
+    out+=`| ${cell(c.name)} | ${red} | ${cell(c.use)} | ${cell(c.disc)} | ${cell(v.plan)||'(미입력)'} | ${cell(v.due)||'-'} | ${cell(v.owner)||'-'} | ${cell(v.status)||'미정'} |\n`;
   });
   return out.trim();
-}
-function actCSV(){
-  const q=s=>'"'+String(s||'').replace(/"/g,'""')+'"';
-  const head=['클러스터','정체종수','정체금액(M)','용도','단종','소진방안','목표시점','담당','상태'];
-  const rows=actClusters.map(c=>{const v=ACTS[c.name]||{};
-    return [c.name,c.red,c.red_amt,c.use,c.disc,v.plan||'',v.due||'',v.owner||'',v.status||'미정'].map(q).join(',');});
-  return '\uFEFF'+head.map(q).join(',')+'\n'+rows.join('\n');
 }
 document.getElementById('copyAct').onclick=async function(){
   const txt=actText();
   try{await navigator.clipboard.writeText(txt);}
   catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(_){}document.body.removeChild(ta);}
   this.classList.add('copied');const o=this.textContent;this.textContent='✓ 복사됨';setTimeout(()=>{this.classList.remove('copied');this.textContent=o;},1400);
-};
-document.getElementById('csvAct').onclick=function(){
-  const blob=new Blob([actCSV()],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='누적재고_소진대책_2026-06.csv';document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);document.body.removeChild(a);},100);
 };
 document.getElementById('resetAct').onclick=function(){
   if(!confirm('입력한 모든 대책을 지웁니다. 계속할까요?'))return;
