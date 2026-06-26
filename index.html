@@ -1,0 +1,357 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>누적재고 소진 대책 대시보드</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--paper:#F1F3F6;--surface:#FFFFFF;--ink:#161A22;--muted:#5E6878;--faint:#8A93A3;
+--line:#E3E6EC;--line2:#EEF0F4;--nav:#1E2740;--red:#C8412B;--redbg:#FBEAE6;--amber:#C2860F;--amberbg:#FBF1DC;
+--green:#1F8A66;--greenbg:#E3F2EC;--mono:"SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1480px;margin:0 auto;padding:0 28px 64px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.r{background:var(--red)}.dot.a{background:var(--amber)}.dot.g{background:var(--green)}
+.top{background:var(--nav);color:#fff;margin:0 -28px;padding:22px 28px 20px;position:sticky;top:0;z-index:30;box-shadow:0 1px 0 rgba(0,0,0,.15)}
+.top .row{max-width:1480px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:14px}.brand h1{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:0}
+.brand .sub{font-size:13px;color:#A9B3C9;font-weight:500}
+.asof{font-size:12.5px;color:#A9B3C9;text-align:right;line-height:1.6}.asof b{color:#fff;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0 24px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 15px;position:relative;overflow:hidden}
+.kpi .lab{font-size:11.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;white-space:nowrap}
+.kpi .big{font-size:25px;font-weight:800;letter-spacing:-.03em;line-height:1;white-space:nowrap}
+.kpi .big .u{font-size:12.5px;font-weight:700;color:var(--muted);margin-left:2px}
+.kpi .meta{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.45}
+.kpi.total{background:linear-gradient(180deg,#fff,#FBFCFE)}
+.kpi.r{border-top:3px solid var(--red)}.kpi.a{border-top:3px solid var(--amber)}.kpi.g{border-top:3px solid var(--green)}
+.kpi .pct{position:absolute;right:13px;top:13px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--redbg);color:var(--red)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+.sec h2{font-size:16px;font-weight:800;letter-spacing:-.01em;margin:0 0 3px;display:flex;align-items:center;gap:9px}
+.sec h2 .idx{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;background:var(--nav);border-radius:6px;padding:2px 7px}
+.sec .desc{font-size:13px;color:var(--muted);margin:0 0 18px;max-width:900px}
+.sec .desc b{color:var(--ink);font-weight:700}
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:center}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:12px;flex-wrap:wrap}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#F6F7F9}
+.toggle button{font-size:12.5px;font-weight:700;border:0;background:transparent;color:var(--muted);padding:7px 13px;cursor:pointer}
+.toggle button.on{background:var(--nav);color:#fff}
+.sfilter{font-size:12.5px;font-weight:700;color:var(--ink);border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 10px;cursor:pointer;max-width:200px}
+.sfilter:focus{outline:2px solid var(--nav);outline-offset:1px}
+.estnote{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5;padding-left:2px}
+.estnote b{color:var(--muted);font-weight:700}
+.trend-read{font-size:13.5px;line-height:1.7;color:var(--muted)}
+.trend-read .hl{display:block;font-size:15px;color:var(--ink);font-weight:700;margin-bottom:6px}
+.trend-read ul{margin:12px 0 0;padding-left:18px}.trend-read li{margin-bottom:8px}.trend-read b{color:var(--ink)}
+.cohort-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--muted);margin-top:8px}
+.cohort-leg span{display:flex;align-items:center;gap:6px}.cohort-leg i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.scat-note{font-size:11.5px;color:var(--faint);display:flex;justify-content:space-between;margin-top:6px}
+.clu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.clu{border:1px solid var(--line);border-radius:12px;padding:15px 17px;background:#fff;cursor:pointer;transition:.13s;position:relative}
+.clu:hover{border-color:var(--nav);box-shadow:0 6px 18px rgba(30,39,64,.10);transform:translateY(-2px)}
+.clu.lead{border-color:var(--red);background:linear-gradient(180deg,#FFFBFA,#fff)}
+.clu .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:11px}
+.clu .cn{font-size:14.5px;font-weight:800}.clu .ca{font-family:var(--mono);font-size:17px;font-weight:800}
+.clu .cmeta{font-size:11.5px;color:var(--faint);margin-bottom:11px;display:flex;gap:10px;flex-wrap:wrap}
+.stack{height:13px;border-radius:4px;overflow:hidden;display:flex;background:#F1F3F6}
+.stack i{height:100%}.stack i.r{background:var(--red)}.stack i.a{background:var(--amber)}.stack i.g{background:var(--green)}
+.clu .cleg{display:flex;gap:13px;margin-top:9px;font-size:11.5px;color:var(--muted);font-weight:600}
+.clu .cleg span{display:flex;align-items:center;gap:5px}
+.clu .open-hint{position:absolute;right:14px;bottom:13px;font-size:11px;font-weight:700;color:var(--nav);opacity:0;transition:.13s}
+.clu:hover .open-hint{opacity:.85}
+.clu .redflag{position:absolute;right:15px;top:15px;font-size:10.5px;font-weight:800;color:var(--red);background:var(--redbg);padding:2px 7px;border-radius:20px}
+details.tbl{margin-top:4px}
+details.tbl summary{cursor:pointer;font-size:13.5px;font-weight:700;color:var(--nav);padding:6px 0;list-style:none;display:flex;align-items:center;gap:8px}
+details.tbl summary::-webkit-details-marker{display:none}
+details.tbl summary .arw{transition:.15s;display:inline-block}details.tbl[open] summary .arw{transform:rotate(90deg)}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line2)}
+th{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.03em;position:sticky;top:74px;background:#fff}
+td.n{font-family:var(--mono);text-align:right}
+tr.row-red td:first-child{box-shadow:inset 3px 0 0 var(--red)}tr.row-amber td:first-child{box-shadow:inset 3px 0 0 var(--amber)}tr.row-green td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+.tt-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(20,24,34,.55);backdrop-filter:blur(2px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:48px 20px;overflow-y:auto}
+.ov.show{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:920px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;animation:pop .18s ease}
+@keyframes pop{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.modal .mh{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:sticky;top:0;background:#fff}
+.modal .mh h3{margin:0 0 7px;font-size:18px;font-weight:800}
+.modal .mh .mchips{display:flex;gap:8px;flex-wrap:wrap}
+.mchip{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:#F0F2F5;color:var(--muted)}
+.mchip.r{background:var(--redbg);color:var(--red)}.mchip.a{background:var(--amberbg);color:var(--amber)}.mchip.g{background:var(--greenbg);color:var(--green)}
+.xbtn{border:0;background:#F0F2F5;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px;color:var(--muted);flex-shrink:0}
+.xbtn:hover{background:#E3E6EC}
+.modal .mb{padding:10px 18px 20px;max-height:62vh;overflow-y:auto}
+.row-item{display:grid;grid-template-columns:26px 1fr 86px 1fr 132px;gap:14px;align-items:center;padding:11px 10px;border-radius:10px}
+.row-item+.row-item{border-top:1px solid var(--line2)}
+.row-item:hover{background:#FAFBFC}
+.rank{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--faint);text-align:right}
+.ri-name{min-width:0}.ri-name .nm{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-name .meta{font-size:11.5px;color:var(--faint);margin-top:3px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10.5px;font-weight:700;padding:1.5px 6px;border-radius:5px}
+.tag.use{background:#EEF1F6;color:#48556B}.tag.code{font-family:var(--mono);background:#F2F4F7;color:#6A7486;font-weight:600;letter-spacing:-.02em}
+.sep{color:var(--line)}
+.bar-wrap{display:flex;align-items:center}.bar-track{flex:1;height:22px;background:#F1F3F6;border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px}.bar-fill.red{background:var(--red)}.bar-fill.amber{background:var(--amber)}.bar-fill.green{background:var(--green)}
+.chips{display:flex;gap:7px;justify-content:flex-end;align-items:center}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.chip.red{background:var(--redbg);color:var(--red)}.chip.amber{background:var(--amberbg);color:var(--amber)}.chip.green{background:var(--greenbg);color:var(--green)}
+.bar-val{font-family:var(--mono);font-size:13px;font-weight:700;min-width:60px;text-align:right}
+.spark{display:block}
+#tip{position:fixed;pointer-events:none;background:var(--nav);color:#fff;font-size:12px;padding:8px 11px;border-radius:8px;opacity:0;transition:opacity .1s;z-index:80;max-width:240px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.foot{font-size:11.5px;color:var(--faint);margin-top:20px;line-height:1.7}
+@media(max-width:1080px){.grid2{grid-template-columns:1fr}.row-item{grid-template-columns:22px 1fr 132px}.row-item .bar-wrap,.row-item>div:nth-child(3){display:none}}
+@media(max-width:620px){.kpis{grid-template-columns:1fr 1fr}.clu-grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="top"><div class="row">
+<div class="brand"><h1>누적재고 소진 대책 대시보드</h1><span class="sub">단종 결정 후 소진 중 재고 · SCM ↔ 영업 합동 점검</span></div>
+<div class="asof">기준 <b>2026.06</b> · 데이터 <b>2025.05–2026.06</b><br>최근출고/소진예상: <b>최근 3개월(3·4·5월)</b> 평균 · 6월 진행중 제외</div>
+</div></div>
+<div class="wrap">
+<div class="kpis">
+<div class="kpi total"><div class="lab">총 묶인 재고 (단종 후 소진중)</div>
+<div class="big">₩49.0<span class="u">백만</span></div>
+<div class="meta">588개 · 30 SKU · 공식 Non-moving 12종(₩20.3M)</div></div>
+<div class="kpi r"><span class="pct">45%</span><div class="lab"><span class="dot r"></span>정체 · 소진불가</div>
+<div class="big">₩22.1<span class="u">백만</span></div>
+<div class="meta">16종 · 85개 · 최근 3개월 출고 0</div></div>
+<div class="kpi a"><div class="lab"><span class="dot a"></span>장기 · 1년+ 소요</div>
+<div class="big">₩16.5<span class="u">백만</span></div>
+<div class="meta">4종 · 420개 · 현 속도로 6개월↑</div></div>
+<div class="kpi g"><div class="lab"><span class="dot g"></span>정상 소진중</div>
+<div class="big">₩10.4<span class="u">백만</span></div>
+<div class="meta">10종 · 83개 · 6개월 내 소진 전망</div></div>
+</div><div class="sec">
+<div class="chart-head"><h2><span class="idx">01</span>소진 추이 — 단종 코호트별</h2>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+<select id="seriesFilter" class="sfilter"><option value="all">전체 시리즈</option></select>
+<div class="toggle" id="trendToggle"><button data-v="cohort" class="on">단종 코호트별 소진율</button><button data-v="raw">전체 월별 출고(원본)</button></div></div></div>
+<p class="desc" id="trendDesc"></p>
+<div class="grid2">
+<div><div id="trendChart"></div><div class="cohort-leg" id="trendLeg"></div>
+<div class="estnote" id="estNote"></div></div>
+<div class="trend-read" id="trendRead"></div>
+</div></div><div class="sec">
+<h2><span class="idx">02</span>소진성 × 묶인금액 맵</h2>
+<p class="desc">가로=<b>예상 소진기간</b>(오른쪽일수록 오래), 세로=<b>묶인 금액</b>, 원 크기=수량. <b>오른쪽 위 = 큰 돈인데 안 빠지는 1순위.</b> 점에 커서를 올리면 품목명.</p>
+<div id="scatter"></div></div><div class="sec">
+<h2><span class="idx">03</span>악성 클러스터 — 시리즈/품목 덩어리</h2>
+<p class="desc">정체 금액은 소수 덩어리에 집중. <b>카드를 클릭하면 해당 덩어리의 품목별 우선순위</b>가 열린다. 색 막대 = 정체/장기/정상 구성비.</p>
+<div class="clu-grid" id="cluGrid"></div></div><div class="sec"><details class="tbl"><summary><span class="arw">▶</span>전체 SKU 명세 (30종) — 펼치기</summary>
+<div style="overflow-x:auto"><table><thead><tr><th>등급</th><th>품목군</th><th>시리즈</th><th>단품명</th><th>CODE</th><th>용도</th><th>단종</th>
+<th style="text-align:right">잔량</th><th style="text-align:right">금액(M)</th><th style="text-align:right">회전율</th><th style="text-align:right">최근3M</th><th style="text-align:right">소진예상(M)</th></tr></thead>
+<tbody id="tbody"></tbody></table></div></details></div><div class="foot">
+※ <b>소진율 곡선은 추정치</b> — 원본 데이터는 <b>월별 출고량(2025.05~2026.06)</b>뿐이라, 현재 재고에 출고를 역산해 과거 잔여재고를 추정함(단종 후 입고 없음 가정). 진입 시점이 다른 품목을 단종 후 경과월로 정렬해 calendar 합산 노이즈를 제거함. 2024.09 코호트는 데이터 시작(단종 8개월 후)을 100% 기준으로 함.<br>
+※ 등급 — <b>정체</b>: 최근 3개월(2026.3·4·5) 출고 0 & 잔량 보유 · <b>장기</b>: 현 속도로 소진까지 6개월 초과 · <b>정상</b>: 6개월 내 소진. 소진예상 = 잔량 ÷ 최근 3개월 월평균 출고. 공식 Non-moving 12종 외 4종이 최근 3개월 기준 추가 정지로 정체 16종.
+</div></div><div class="ov" id="ov"><div class="modal" id="modal" role="dialog" aria-modal="true">
+<div class="mh"><div><h3 id="mTitle"></h3><div class="mchips" id="mChips"></div></div><button class="xbtn" id="mClose" aria-label="닫기">×</button></div>
+<div class="mb" id="mBody"></div></div></div><div id="tip"></div><script>const DATA={"skus": [{"pg": "기타", "series": "공통", "code": "SLAD0000NB-XX", "name": "디퓨저 나이트 브리즈", "clu": "기타(디퓨저·안대 등)", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 12월", "elapsed": 6.0, "qty": 376, "amt": 12.37, "turn": 0.08, "r3": 95, "mtd": 11.9, "tier": "amber", "spark": [9, 13, 5, 8, 24, 4, 9, 6, 15, 9, 26, 28, 41, 31]}, {"pg": "기타", "series": "공통", "code": "SLAE0080-LLG", "name": "수면안대_라이트그레이", "clu": "기타(디퓨저·안대 등)", "sup": "매트리스", "cls": "Non-moving", "use": "사은품", "disc": "2024년 9월", "elapsed": 21.0, "qty": 1, "amt": 0.01, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "매트리스", "series": "플로우", "code": "SLMW0090B-5S3AS", "name": "플로우 매트리스 밸런스 S", "clu": "플로우 매트리스", "sup": "매트리스", "cls": "출고有", "use": "판매", "disc": "2025년 7월", "elapsed": 11.0, "qty": 8, "amt": 2.09, "turn": 0.46, "r3": 11, "mtd": 2.2, "tier": "green", "spark": [4, 1, 5, 2, 2, 5, 1, 0, 2, 6, 8, 2, 1, 9]}, {"pg": "매트리스", "series": "플로우", "code": "SLMW0090A-5S3LS", "name": "플로우 매트리스 컴포트 S", "clu": "플로우 매트리스", "sup": "매트리스", "cls": "출고有", "use": "판매", "disc": "2025년 7월", "elapsed": 11.0, "qty": 5, "amt": 1.31, "turn": 0.8, "r3": 12, "mtd": 1.2, "tier": "green", "spark": [7, 1, 1, 3, 7, 4, 3, 0, 2, 6, 3, 2, 7, 7]}, {"pg": "매트리스", "series": "플로우", "code": "SLMW0150B-5S3AS", "name": "플로우 매트리스 밸런스 Q", "clu": "플로우 매트리스", "sup": "매트리스", "cls": "출고有", "use": "판매", "disc": "2025년 7월", "elapsed": 11.0, "qty": 1, "amt": 0.36, "turn": 6.0, "r3": 18, "mtd": 0.2, "tier": "green", "spark": [4, 6, 1, 5, 1, 1, 7, 1, 1, 3, 10, 7, 1, 3]}, {"pg": "모션", "series": "오리지널모션", "code": "SLNC0090BR-1S1", "name": "오리지널 매트리스 모션 B  S 스위치R형", "clu": "모션 부속", "sup": "안성철제", "cls": "Non-moving", "use": "AS", "disc": "2024년 9월", "elapsed": 21.0, "qty": 1, "amt": 1.11, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [3, 2, 15, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "모션", "series": "오리지널모션", "code": "SLNA0000E-CHO", "name": "모션매트리스 침대다리 (4EA)", "clu": "모션 부속", "sup": "일룸상품", "cls": "출고有", "use": "AS", "disc": "2024년 9월", "elapsed": 21.0, "qty": 3, "amt": 0.05, "turn": 0.22, "r3": 2, "mtd": 4.5, "tier": "green", "spark": [71, 29, 41, 10, 7, 5, 1, 0, 0, 0, 0, 2, 0, 2]}, {"pg": "커버", "series": "공통", "code": "SLCD0240CN-CG3044", "name": "슬로우베드x클라리스 이불커버 노아 초크그린 K", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 18, "amt": 2.77, "turn": 0.02, "r3": 1, "mtd": 54.0, "tier": "amber", "spark": [2, 6, 2, 0, 6, 1, 0, 0, 2, 0, 1, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0165SH1-5S3", "name": "스태리나잇 오브 서울 최상단 커버 단품 K", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 9, "amt": 2.37, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0110SH1-5S3", "name": "스태리나잇 오브 서울 최상단 커버 단품 SS", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 12, "amt": 2.22, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0150SH1-5S3", "name": "스태리나잇 오브 서울 최상단 커버 단품 Q", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 9, "amt": 2.17, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [1, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0110SH1-5S2B", "name": "스태리나잇 오브 제주 최상단 커버 단품 SS", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 11, "amt": 2.03, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLMA0110CO-1G2A", "name": "상단커버 오가닉모달 SS (오리지널/모션 공용)", "clu": "오가닉모달 상단커버", "sup": "매트리스", "cls": "출고有", "use": "AS", "disc": "2024년 9월", "elapsed": 21.0, "qty": 33, "amt": 1.81, "turn": 0.18, "r3": 18, "mtd": 5.5, "tier": "green", "spark": [45, 28, 13, 4, 7, 7, 12, 2, 7, 11, 5, 7, 6, 4]}, {"pg": "커버", "series": "공통", "code": "SLCM0150SH1-5S2B", "name": "스태리나잇 오브 제주 최상단 커버 단품 Q", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 6, "amt": 1.45, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [5, 4, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCD0240CN-GS3041", "name": "슬로우베드x클라리스 이불커버 노아 그레이스톤 K", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 7, "amt": 1.08, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [10, 3, 4, 1, 1, 1, 0, 4, 0, 1, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLMA0090CO-1G2A", "name": "상단커버 오가닉모달 S (모션)", "clu": "오가닉모달 상단커버", "sup": "매트리스", "cls": "출고有", "use": "AS", "disc": "2024년 9월", "elapsed": 21.0, "qty": 20, "amt": 1.02, "turn": 0.17, "r3": 10, "mtd": 6.0, "tier": "green", "spark": [9, 7, 10, 12, 6, 5, 1, 1, 4, 3, 1, 6, 3, 3]}, {"pg": "커버", "series": "공통", "code": "SLCP050CN-CG3044", "name": "슬로우베드x클라리스 베개커버2P 노아 초크 그린", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 22, "amt": 0.9, "turn": 0.05, "r3": 3, "mtd": 22.0, "tier": "amber", "spark": [2, 16, 13, 5, 29, 17, 14, 4, 2, 0, 1, 2, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0180SH1-5S2B", "name": "스태리나잇 오브 제주 최상단 커버 단품 KK", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 3, "amt": 0.85, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [4, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCM0180SH1-5S3", "name": "스태리나잇 오브 서울 최상단 커버 단품 KK", "clu": "스태리나잇 커버", "sup": "매트리스", "cls": "Non-moving", "use": "AS", "disc": "2025년 7월", "elapsed": 11.0, "qty": 3, "amt": 0.85, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [2, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCD0230CN-GS3041", "name": "슬로우베드x클라리스 이불커버 노아 그레이스톤 Q", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 4, "amt": 0.61, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [2, 1, 1, 1, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCD0160CN-CG3044", "name": "슬로우베드x클라리스 이불커버 노아 초크그린 SS", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 4, "amt": 0.44, "turn": 0.08, "r3": 1, "mtd": 12.0, "tier": "amber", "spark": [-1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLMA0150CO-1G2A", "name": "상단커버 오가닉모달 Q (오리지널/모션 공용)", "clu": "오가닉모달 상단커버", "sup": "매트리스", "cls": "출고有", "use": "AS", "disc": "2024년 9월", "elapsed": 21.0, "qty": 5, "amt": 0.3, "turn": 0.2, "r3": 3, "mtd": 5.0, "tier": "green", "spark": [8, 4, 2, 1, 1, 1, 1, 0, 1, 5, 1, 2, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLCD0230CN-CG3044", "name": "슬로우베드x클라리스 이불커버 노아 초크그린 Q", "clu": "클라리스 이불·베개커버", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "2025년 7월", "elapsed": 11.0, "qty": 1, "amt": 0.15, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 2, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]}, {"pg": "커버", "series": "공통", "code": "SLXX24050001-LCG", "name": "린넨 베딩 세트 차콜그레이  K", "clu": "기타(디퓨저·안대 등)", "sup": "일룸상품", "cls": "출고有", "use": "사은품", "disc": "-", "elapsed": null, "qty": 1, "amt": 0.0, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HL-5M2", "name": "마론 프레임 헤드보드 S L형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "Non-moving", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 7, "amt": 2.98, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HR-5M2", "name": "마론 프레임 헤드보드 S R형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "Non-moving", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 7, "amt": 2.98, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HL-5M0", "name": "마론 프레임 헤드보드 S L형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "출고有", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 4, "amt": 1.7, "turn": 0.17, "r3": 2, "mtd": 6.0, "tier": "green", "spark": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HL-5T6", "name": "마론 프레임 헤드보드 S L형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "Non-moving", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 3, "amt": 1.28, "turn": 0.0, "r3": 0, "mtd": null, "tier": "red", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HR-5M0", "name": "마론 프레임 헤드보드 S R형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "출고有", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 2, "amt": 0.85, "turn": 0.33, "r3": 2, "mtd": 3.0, "tier": "green", "spark": [1, 1, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 1, 0]}, {"pg": "프레임", "series": "마론", "code": "SLFG0090HR-5T6", "name": "마론 프레임 헤드보드 S R형", "clu": "마론 프레임 헤드보드", "sup": "일룸상품", "cls": "출고有", "use": "판매", "disc": "2026년 3월", "elapsed": 3.0, "qty": 2, "amt": 0.85, "turn": 0.17, "r3": 1, "mtd": 6.0, "tier": "green", "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]}], "trend": [{"m": "2025.5", "v": 191}, {"m": "2025.6", "v": 131}, {"m": "2025.7", "v": 134}, {"m": "2025.8", "v": 57}, {"m": "2025.9", "v": 100}, {"m": "2025.10", "v": 54}, {"m": "2025.11", "v": 49}, {"m": "2025.12", "v": 21}, {"m": "2026.1", "v": 37}, {"m": "2026.2", "v": 45}, {"m": "2026.3", "v": 58}, {"m": "2026.4", "v": 60}, {"m": "2026.5", "v": 61}, {"m": "2026.6", "v": 59}], "months": ["2025.5", "2025.6", "2025.7", "2025.8", "2025.9", "2025.10", "2025.11", "2025.12", "2026.1", "2026.2", "2026.3", "2026.4", "2026.5", "2026.6"], "summary": {"total": {"n": 30, "qty": 588, "amt": 49.0}, "red": {"n": 16, "qty": 85, "amt": 22.1}, "amber": {"n": 4, "qty": 420, "amt": 16.5}, "green": {"n": 10, "qty": 83, "amt": 10.4}, "nonmoving_official": {"n": 12, "qty": 72, "amt": 20.3}}, "clusters": [{"name": "기타(디퓨저·안대 등)", "n": 3, "amt": 12.38, "qty": 378, "red": 2, "amber": 1, "green": 0, "red_amt": 0.01, "use": "사은품", "disc": "-"}, {"name": "스태리나잇 커버", "n": 7, "amt": 11.94, "qty": 53, "red": 7, "amber": 0, "green": 0, "red_amt": 11.94, "use": "AS", "disc": "2025년 7월"}, {"name": "마론 프레임 헤드보드", "n": 6, "amt": 10.65, "qty": 25, "red": 3, "amber": 0, "green": 3, "red_amt": 7.24, "use": "판매", "disc": "2026년 3월"}, {"name": "클라리스 이불·베개커버", "n": 6, "amt": 5.95, "qty": 56, "red": 3, "amber": 3, "green": 0, "red_amt": 1.84, "use": "사은품", "disc": "2025년 7월"}, {"name": "플로우 매트리스", "n": 3, "amt": 3.76, "qty": 14, "red": 0, "amber": 0, "green": 3, "red_amt": 0.0, "use": "판매", "disc": "2025년 7월"}, {"name": "오가닉모달 상단커버", "n": 3, "amt": 3.13, "qty": 58, "red": 0, "amber": 0, "green": 3, "red_amt": 0.0, "use": "AS", "disc": "2024년 9월"}, {"name": "모션 부속", "n": 2, "amt": 1.16, "qty": 4, "red": 1, "amber": 0, "green": 1, "red_amt": 1.11, "use": "AS", "disc": "2024년 9월"}], "cohorts": [{"k": 24297, "label": "2024.09 단종", "n": 6, "color": "#8A93A3", "pts": [{"off": 8, "pct": 100.0}, {"off": 9, "pct": 81.2}, {"off": 10, "pct": 59.5}, {"off": 11, "pct": 52.0}, {"off": 12, "pct": 46.4}, {"off": 13, "pct": 41.3}, {"off": 14, "pct": 37.3}, {"off": 15, "pct": 36.5}, {"off": 16, "pct": 33.2}, {"off": 17, "pct": 28.2}, {"off": 18, "pct": 26.3}, {"off": 19, "pct": 21.7}, {"off": 20, "pct": 19.3}, {"off": 21, "pct": 16.9}], "note": "단종 8개월 후부터 관측"}, {"k": 24307, "label": "2025.07 단종", "n": 16, "color": "#C8412B", "pts": [{"off": 0, "pct": 100.0}, {"off": 1, "pct": 94.3}, {"off": 2, "pct": 79.6}, {"off": 3, "pct": 71.1}, {"off": 4, "pct": 64.0}, {"off": 5, "pct": 60.6}, {"off": 6, "pct": 57.8}, {"off": 7, "pct": 53.3}, {"off": 8, "pct": 46.7}, {"off": 9, "pct": 42.8}, {"off": 10, "pct": 40.2}, {"off": 11, "pct": 34.8}], "note": null}, {"k": 24312, "label": "2025.12 단종", "n": 1, "color": "#1F8A66", "pts": [{"off": 0, "pct": 100.0}, {"off": 1, "pct": 97.1}, {"off": 2, "pct": 95.4}, {"off": 3, "pct": 90.5}, {"off": 4, "pct": 85.2}, {"off": 5, "pct": 77.4}, {"off": 6, "pct": 71.5}], "note": null}, {"k": 24315, "label": "2026.03 단종", "n": 6, "color": "#C2860F", "pts": [{"off": 0, "pct": 100.0}, {"off": 1, "pct": 96.4}, {"off": 2, "pct": 89.3}, {"off": 3, "pct": 89.3}], "note": null}]};
+const TCOL={red:'#C8412B',amber:'#C2860F',green:'#1F8A66'};
+const TLAB={red:'정체',amber:'장기',green:'정상'};
+const tip=document.getElementById('tip');
+function showTip(e,h){tip.innerHTML=h;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){let x=e.clientX+14,y=e.clientY+14;if(x>innerWidth-250)x=e.clientX-250;tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.style.opacity=0;}
+function spark(arr,color){const w=72,h=20,mx=Math.max(...arr,1),n=arr.length;
+  const pts=arr.map((v,i)=>`${(w*i/(n-1)).toFixed(1)},${(h-2-(h-4)*v/mx).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" opacity=".85"/></svg>`;}
+
+/* ---- TREND: cohort depletion ---- */
+function chartCohort(cohorts){
+  const W=720,H=320,pL=44,pR=54,pT=18,pB=40,iw=W-pL-pR,ih=H-pT-pB;
+  const maxOff=Math.max(...cohorts.flatMap(c=>c.pts.map(p=>p.off)),3);
+  const X=o=>pL+iw*o/maxOff, Y=p=>pT+ih*(1-p/100);
+  let g='';
+  [0,25,50,75,100].forEach(gy=>{const y=Y(gy);g+=`<line x1="${pL}" y1="${y}" x2="${pL+iw}" y2="${y}" stroke="#EEF0F4"/><text x="${pL-7}" y="${y+3}" text-anchor="end" font-size="10" fill="#8A93A3" font-family="monospace">${gy}</text>`;});
+  for(let o=0;o<=maxOff;o+=3){const x=X(o);g+=`<text x="${x}" y="${H-pB+16}" text-anchor="middle" font-size="9.5" fill="#8A93A3" font-family="monospace">${o}</text>`;}
+  let lines='';
+  cohorts.forEach(c=>{
+    const pl=c.pts.map(p=>`${X(p.off).toFixed(1)},${Y(p.pct).toFixed(1)}`).join(' ');
+    lines+=`<polyline points="${pl}" fill="none" stroke="${c.color}" stroke-width="16" stroke-opacity="0" stroke-linejoin="round" stroke-linecap="round" class="chit" data-k="${c.k}" style="cursor:pointer"/>`;
+    lines+=`<polyline points="${pl}" fill="none" stroke="${c.color}" stroke-width="2.4" stroke-linejoin="round" style="pointer-events:none"/>`;
+    c.pts.forEach(p=>{lines+=`<circle cx="${X(p.off).toFixed(1)}" cy="${Y(p.pct).toFixed(1)}" r="3" fill="${c.color}" class="cd" data-k="${c.k}" data-l="${c.label}" data-o="${p.off}" data-p="${p.pct}" style="cursor:pointer"/>`;});
+    const last=c.pts[c.pts.length-1];
+    lines+=`<text x="${(X(last.off)+5).toFixed(1)}" y="${(Y(last.pct)+3).toFixed(1)}" font-size="10.5" font-weight="800" fill="${c.color}" style="pointer-events:none">${last.pct}%</text>`;
+  });
+  g+=`<text x="${pL+iw/2}" y="${H-3}" text-anchor="middle" font-size="11" fill="#5E6878" font-weight="600">단종 후 경과(개월) →</text>`;
+  g+=`<text x="13" y="${pT+ih/2}" text-anchor="middle" font-size="11" fill="#5E6878" font-weight="600" transform="rotate(-90 13 ${pT+ih/2})">잔여율(%) ↓ 소진</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" font-family="Pretendard,sans-serif">${g}${lines}</svg>`;
+}
+function chartRaw(trend){
+  const t=trend,W=720,H=320,pL=44,pR=16,pT=18,pB=40,iw=W-pL-pR,ih=H-pT-pB,n=t.length;
+  const mx=Math.max(...t.map(d=>d.v)),X=i=>pL+iw*i/(n-1),Y=v=>pT+ih*(1-v/mx);
+  let g='';
+  [0,50,100,150,200].forEach(gy=>{if(gy>mx)return;const y=Y(gy);g+=`<line x1="${pL}" y1="${y}" x2="${pL+iw}" y2="${y}" stroke="#EEF0F4"/><text x="${pL-7}" y="${y+3}" text-anchor="end" font-size="10" fill="#8A93A3" font-family="monospace">${gy}</text>`;});
+  const pts=t.map((d,i)=>[X(i),Y(d.v)]);
+  const line=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area=`${pL},${Y(0)} ${line} ${X(n-1)},${Y(0)}`;
+  let dots='';t.forEach((d,i)=>{const[x,y]=pts[i];if(i%2==0||i==n-1)g+=`<text x="${x}" y="${H-pB+16}" text-anchor="middle" font-size="9" fill="#8A93A3">${d.m}</text>`;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#fff" stroke="#1E2740" stroke-width="2" class="rd" data-m="${d.m}" data-v="${d.v}"/>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" font-family="Pretendard,sans-serif"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3858" stop-opacity=".16"/><stop offset="1" stop-color="#2C3858" stop-opacity="0"/></linearGradient></defs>${g}<polygon points="${area}" fill="url(#ag)"/><polyline points="${line}" fill="none" stroke="#1E2740" stroke-width="2.4" stroke-linejoin="round"/>${dots}</svg>`;
+}
+const READ={
+ cohort:`<span class="hl">단종 배치별로 정렬하니 정체가 또렷하다</span>각 곡선은 한 단종 시점(코호트)의 잔여재고가 결정 후 몇 개월에 몇 % 남았는지. 아래로 내려갈수록 잘 소진된 것.
+  <ul>
+   <li><b style="color:#C2860F">2026.03 단종(마론 6종)</b>: 3개월간 <b>89%까지밖에 안 빠지고 평탄</b> — 단종 직후인데 벌써 정체.</li>
+   <li><b style="color:#C8412B">2025.07 단종(16종)</b>: 35%까지 소진됐으나 <b>스태리나잇 비무빙 꼬리가 발목</b>, 둔화 중.</li>
+   <li><b style="color:#1F8A66">2025.12 단종(디퓨저)</b>: 월 ~5%씩 <b>꾸준히 소진</b> — 유일하게 건강한 곡선.</li>
+   <li><b style="color:#8A93A3">2024.09 단종(6종)</b>: 17%까지 소진됐으나 최근 거의 <b>평탄(끝물 꼬리)</b>.</li>
+  </ul>`,
+ raw:`<span class="hl">원본은 코호트가 섞여 등락이 크다</span>전체 월 출고를 calendar로 합치면, 단종 시점이 제각각인 품목이 섞여 <b>단종품 추가·정상판매분이 노이즈로 끼어든다.</b>
+  <ul><li>초기 월 130~190개 → 25.12 바닥 21개 → 현재 ~60개 횡보.</li>
+  <li>이 곡선만으론 "어느 배치가 안 빠지는지" 구분 불가 → <b>왼쪽 토글(코호트별)로 보면 분리됨.</b></li></ul>`
+};
+let trendMode='cohort';
+let currentSeries='all';
+// calendar keys + cohort meta for on-the-fly recompute
+const CAL=DATA.months.map(m=>{const a=m.split('.').map(Number);return a[0]*12+a[1];});
+const COMETA={};DATA.cohorts.forEach(c=>COMETA[c.k]={color:c.color,label:c.label,note:c.note});
+function remSeries(sku){const out=sku.spark,n=out.length,r=new Array(n);for(let i=0;i<n;i++){let s=sku.qty;for(let j=i+1;j<n;j++)s+=out[j];r[i]=s;}return r;}
+function computeCohorts(items){
+  const byK={};items.forEach(s=>{const k=discKey(s.disc);if(k==null||!COMETA[k])return;(byK[k]=byK[k]||[]).push(s);});
+  return Object.keys(byK).map(Number).sort((a,b)=>a-b).map(k=>{
+    const grp=byK[k],rem=grp.map(remSeries),pts=[];
+    CAL.forEach((ci,i)=>{const off=ci-k;if(off<0)return;let tot=0;rem.forEach(r=>tot+=r[i]);pts.push({off,tot});});
+    const anchor=pts[0]?pts[0].tot:0;
+    return {k,label:COMETA[k].label,color:COMETA[k].color,note:COMETA[k].note,n:grp.length,
+      pts:pts.map(p=>({off:p.off,pct:anchor>0?Math.round(p.tot/anchor*1000)/10:0}))};
+  });
+}
+function computeRaw(items){return DATA.months.map((m,i)=>({m,v:items.reduce((a,s)=>a+s.spark[i],0)}));}
+function curItems(){return currentSeries==='all'?DATA.skus:DATA.skus.filter(s=>s.clu===currentSeries);}
+function renderTrend(){
+  const items=curItems();
+  const cohorts=computeCohorts(items), raw=computeRaw(items);
+  document.getElementById('trendChart').innerHTML=trendMode==='cohort'?chartCohort(cohorts):chartRaw(raw);
+  document.getElementById('trendRead').innerHTML=READ[trendMode];
+  const scope=currentSeries==='all'?'':` · <b style="color:var(--nav)">${currentSeries}</b>만 표시 중`;
+  document.getElementById('trendDesc').innerHTML=trendMode==='cohort'
+    ?'품목마다 다른 <b>단종 시점을 t=0으로 정렬</b>해 진입 타이밍 노이즈를 제거한 소진율 곡선. <b>아래로 내려갈수록 잘 빠진 것.</b> <b style="color:var(--nav)">곡선·범례 클릭 시 해당 품목</b>이 열린다.'+scope
+    :'전체 누적재고의 <b>월별 출고 합계(원본)</b> — 코호트가 섞여 등락이 큼. 비교용.'+scope;
+  const hasNote=cohorts.some(c=>c.note);
+  document.getElementById('trendLeg').innerHTML=trendMode==='cohort'
+    ?cohorts.map(c=>`<span data-k="${c.k}" style="cursor:pointer"><i style="background:${c.color}"></i>${c.label}(${c.n}종)${c.note?' *':''}</span>`).join('')+(hasNote?'<span style="color:#A9B0BD">* 단종 8개월 후부터 관측 · 클릭→품목</span>':'')
+    :'<span style="color:#8A93A3">2026.06은 진행중</span>';
+  document.getElementById('estNote').innerHTML=trendMode==='cohort'
+    ?'※ <b>잔여율은 추정치</b> — 원본은 월별 출고량(2025.05~2026.06)뿐이라, 현재 재고에서 출고를 역산해 과거 잔여재고를 추정함(단종 후 입고 없음 가정).'
+    :'※ 원본 월별 출고량(2025.05~2026.06) 실측값.';
+}
+// populate series dropdown (품목 덩어리 단위)
+(function(){const sel=document.getElementById('seriesFilter');
+  DATA.clusters.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.textContent=`${c.name} (${c.n}종)`;sel.appendChild(o);});
+  sel.onchange=()=>{currentSeries=sel.value;renderTrend();};})();
+document.querySelectorAll('#trendToggle button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#trendToggle button').forEach(x=>x.classList.remove('on'));b.classList.add('on');trendMode=b.dataset.v;renderTrend();});
+renderTrend();
+
+/* ---- SCATTER ---- */
+function renderScatter(){
+  const W=1180,H=400,pL=60,pR=140,pT=24,pB=50,iw=W-pL-pR,ih=H-pT-pB;
+  const XCAP=24,finZone=.80,ymax=Math.max(...DATA.skus.map(s=>s.amt))*1.06;
+  const X=v=>pL+iw*finZone*Math.min(v,XCAP)/XCAP,Y=v=>pT+ih*(1-v/ymax),Rr=q=>5+Math.sqrt(q)*1.5;
+  let g='';
+  [0,3,6,9,12].forEach(gy=>{if(gy>ymax)return;const y=Y(gy);g+=`<line x1="${pL}" y1="${y}" x2="${pL+iw}" y2="${y}" stroke="#EEF0F4"/><text x="${pL-8}" y="${y+3}" text-anchor="end" font-size="10" fill="#8A93A3" font-family="monospace">${gy}</text>`;});
+  [0,6,12,18,24].forEach(gx=>{const x=X(gx);g+=`<line x1="${x}" y1="${pT}" x2="${x}" y2="${pT+ih}" stroke="#F5F6F8"/><text x="${x}" y="${H-pB+16}" text-anchor="middle" font-size="10" fill="#8A93A3" font-family="monospace">${gx==24?'24+':gx}</text>`;});
+  const x12=X(6);g+=`<line x1="${x12}" y1="${pT}" x2="${x12}" y2="${pT+ih}" stroke="#C2860F" stroke-width="1.1" stroke-dasharray="4 3"/><text x="${x12+5}" y="${pT+12}" font-size="10" fill="#C2860F" font-weight="700">6개월(장기 경계)</text>`;
+  const bandL=pL+iw*.86;g+=`<rect x="${bandL}" y="${pT}" width="${W-pR-bandL+pR-8}" height="${ih}" fill="#FBEAE6" opacity=".55"/><line x1="${bandL}" y1="${pT}" x2="${bandL}" y2="${pT+ih}" stroke="#E7C3B9" stroke-dasharray="3 3"/><text x="${(bandL+W-pR)/2}" y="${pT+ih+16}" text-anchor="middle" font-size="11" fill="#C8412B" font-weight="800">∞ 정체(소진불가)</text>`;
+  const inf=DATA.skus.filter(s=>s.mtd==null).sort((a,b)=>b.amt-a.amt);const span=(W-pR-8)-bandL-24;
+  let dots='';DATA.skus.forEach(s=>{let cx;if(s.mtd==null){const i=inf.indexOf(s),col=i%4;cx=bandL+18+col*(span/4);}else cx=X(s.mtd);
+    const cy=Y(s.amt),r=Rr(s.qty);
+    dots+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}" fill="${TCOL[s.tier]}" fill-opacity=".55" stroke="${TCOL[s.tier]}" stroke-width="1.4" class="sd" data-n="${s.name}" data-t="${TLAB[s.tier]}" data-a="${s.amt}" data-q="${s.qty}" data-m="${s.mtd==null?'∞':s.mtd+'개월'}" data-c="${s.code}"/>`;});
+  g+=`<text x="${pL+iw*finZone/2}" y="${H-4}" text-anchor="middle" font-size="11" fill="#5E6878" font-weight="600">예상 소진기간(개월) →</text><text x="16" y="${pT+ih/2}" text-anchor="middle" font-size="11" fill="#5E6878" font-weight="600" transform="rotate(-90 16 ${pT+ih/2})">묶인 금액(백만원) →</text>`;
+  document.getElementById('scatter').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" font-family="Pretendard,sans-serif">${g}${dots}</svg>`;
+}
+renderScatter();
+
+/* ---- CLUSTERS ---- */
+function renderClusters(){
+  const lead=['스태리나잇 커버','마론 프레임 헤드보드'];
+  document.getElementById('cluGrid').innerHTML=DATA.clusters.map(c=>{
+    const rp=c.red/c.n*100,ap=c.amber/c.n*100,gp=c.green/c.n*100;
+    const flag=c.red_amt>0?`<span class="redflag">정체 ₩${c.red_amt}M</span>`:'';
+    return `<div class="clu ${lead.includes(c.name)?'lead':''}" data-clu="${c.name}">
+      ${flag}<div class="ch"><span class="cn">${c.name}</span><span class="ca">₩${c.amt}M</span></div>
+      <div class="cmeta"><span>${c.n}종 · ${c.qty}개</span><span>용도 ${c.use}</span><span>단종 ${c.disc}</span></div>
+      <div class="stack"><i class="r" style="width:${rp}%"></i><i class="a" style="width:${ap}%"></i><i class="g" style="width:${gp}%"></i></div>
+      <div class="cleg"><span><span class="dot r"></span>정체 ${c.red}</span><span><span class="dot a"></span>장기 ${c.amber}</span><span><span class="dot g"></span>정상 ${c.green}</span></div>
+      <div class="open-hint">클릭 → 품목별 우선순위 ›</div></div>`;
+  }).join('');
+  document.querySelectorAll('.clu').forEach(el=>el.onclick=()=>openModal(el.dataset.clu));
+}
+renderClusters();
+
+/* ---- MODAL ---- */
+const ov=document.getElementById('ov');
+function rowsHtml(items){
+  const list=[...items].sort((a,b)=>b.amt-a.amt);
+  const mx=Math.max(...list.map(s=>s.amt));
+  return list.map((s,i)=>{
+    const w=Math.max(3,s.amt/mx*100),mtd=s.mtd==null?'∞ 정체':s.mtd+'개월';
+    const chip=s.tier==='red'?'<span class="chip red">소진불가</span>':(s.tier==='amber'?`<span class="chip amber">${mtd}</span>`:`<span class="chip green">${mtd}</span>`);
+    const el=s.elapsed!=null?`단종+${s.elapsed}M`:'단종일미상';
+    return `<div class="row-item"><div class="rank num">${i+1}</div>
+      <div class="ri-name"><div class="nm">${s.name}</div><div class="meta"><span class="tag use">${s.use}</span><span class="tag code">${s.code}</span><span class="sep">·</span><span>잔량 ${s.qty}</span><span class="sep">·</span><span>${el}</span></div></div>
+      <div>${spark(s.spark,TCOL[s.tier])}</div>
+      <div class="bar-wrap"><div class="bar-track"><div class="bar-fill ${s.tier}" style="width:${w}%"></div></div></div>
+      <div class="chips">${chip}<span class="bar-val">₩${s.amt.toFixed(2)}</span></div></div>`;
+  }).join('');
+}
+function fillModal(title,chips,items){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mChips').innerHTML=chips;
+  document.getElementById('mBody').innerHTML=rowsHtml(items);
+  ov.classList.add('show');
+}
+function openModal(name){
+  const c=DATA.clusters.find(x=>x.name===name);
+  const items=DATA.skus.filter(s=>s.clu===name);
+  const chips=`<span class="mchip">${c.n}종 · ${c.qty}개 · ₩${c.amt}M</span>`+
+    (c.red?`<span class="mchip r">정체 ${c.red}종 ₩${c.red_amt}M</span>`:'')+
+    (c.amber?`<span class="mchip a">장기 ${c.amber}종</span>`:'')+
+    (c.green?`<span class="mchip g">정상 ${c.green}종</span>`:'')+
+    `<span class="mchip">용도 ${c.use} · 단종 ${c.disc}</span>`;
+  fillModal(name,chips,items);
+}
+function discKey(d){const m=String(d).match(/(\d+)년\s*(\d+)월/);return m?(+m[1])*12+(+m[2]):null;}
+function openCohort(k){
+  k=+k;
+  if(!COMETA[k])return;
+  const items=curItems().filter(s=>discKey(s.disc)===k);
+  if(!items.length)return;
+  const co=computeCohorts(items)[0];                 // 필터 반영해 곡선·잔여율 재계산
+  const qty=items.reduce((a,s)=>a+s.qty,0), amt=items.reduce((a,s)=>a+s.amt,0);
+  const cnt=t=>items.filter(s=>s.tier===t).length;
+  const ra=items.filter(s=>s.tier==='red').reduce((a,s)=>a+s.amt,0);
+  const last=co.pts[co.pts.length-1];
+  let chips=`<span class="mchip">${items.length}종 · ${qty}개 · ₩${amt.toFixed(2)}M</span>`;
+  if(cnt('red'))chips+=`<span class="mchip r">정체 ${cnt('red')}종 ₩${ra.toFixed(2)}M</span>`;
+  if(cnt('amber'))chips+=`<span class="mchip a">장기 ${cnt('amber')}종</span>`;
+  if(cnt('green'))chips+=`<span class="mchip g">정상 ${cnt('green')}종</span>`;
+  chips+=`<span class="mchip">단종+${last.off}개월 · 잔여율 ${last.pct}%</span>`;
+  const title=COMETA[k].label+' 코호트'+(currentSeries==='all'?'':` · ${currentSeries}`);
+  fillModal(title,chips,items);
+}
+document.getElementById('trendChart').addEventListener('click',e=>{const el=e.target.closest('[data-k]');if(el)openCohort(el.dataset.k);});
+document.getElementById('trendLeg').addEventListener('click',e=>{const el=e.target.closest('[data-k]');if(el)openCohort(el.dataset.k);});
+function closeModal(){ov.classList.remove('show');}
+document.getElementById('mClose').onclick=closeModal;
+ov.onclick=e=>{if(e.target===ov)closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* ---- TABLE ---- */
+document.getElementById('tbody').innerHTML=[...DATA.skus].sort((a,b)=>b.amt-a.amt).map(s=>`<tr class="row-${s.tier}">
+  <td><span class="tt-dot" style="background:${TCOL[s.tier]}"></span>${TLAB[s.tier]}</td><td>${s.pg}</td><td>${s.series}</td><td>${s.name}</td>
+  <td class="num" style="font-size:11px">${s.code}</td><td>${s.use}</td><td>${s.disc.replace('년 ','.').replace('월','')}</td>
+  <td class="n">${s.qty}</td><td class="n">${s.amt.toFixed(2)}</td><td class="n">${s.turn}</td><td class="n">${s.r3}</td><td class="n">${s.mtd==null?'∞':s.mtd}</td></tr>`).join('');
+
+/* ---- TOOLTIPS ---- */
+document.addEventListener('mousemove',e=>{const t=e.target;if(!t.classList)return;
+  if(t.classList.contains('sd'))showTip(e,`<b>${t.dataset.n}</b><br>${t.dataset.c}<br>등급 ${t.dataset.t} · <span class="num">₩${t.dataset.a}M</span><br>잔량 <span class="num">${t.dataset.q}</span> · 소진 <span class="num">${t.dataset.m}</span>`);
+  else if(t.classList.contains('cd'))showTip(e,`<b>${t.dataset.l}</b><br>단종+${t.dataset.o}개월 · 잔여 <span class="num">${t.dataset.p}%</span>`);
+  else if(t.classList.contains('rd'))showTip(e,`<b>${t.dataset.m}</b><br>출고 <span class="num">${t.dataset.v}</span>개`);
+  else if(tip.style.opacity==='1')moveTip(e);});
+document.addEventListener('mouseout',e=>{if(e.target.classList&&['sd','cd','rd'].some(c=>e.target.classList.contains(c)))hideTip();});
+</script></body></html>
